@@ -1,0 +1,2 @@
+# python train.py --config ./config/default.yaml --wandb_config ./wandb_config/default.yaml --resume_path "./weights/Brownian Bridge Process - pred clean speech/epoch=120-last.ckpt" --comment "_resume"
+python train.py --config ./config/experiment.yaml --wandb_config ./wandb_config/default.yaml 

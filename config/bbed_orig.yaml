@@ -1,0 +1,37 @@
+name: "BBED - pred score"
+backbone: "ncsnpp"
+sde:
+  name: "bbed"
+  T_sampling: 0.999
+  k: 2.6
+  theta: 0.51
+lr: 0.0001
+loss: "mse_score"
+pred_type: "score"
+ema_decay: 0.999
+epochs: 120
+t_eps: 0.03
+validation:
+  val_interval: 3
+  num_eval_files: 20
+inference:
+  name: "diffusion"
+  sampler_type: "pc"
+  predictor: "reverse_diffusion"
+  corrector: "ald"
+  N: 30
+  corrector_steps: 1
+  snr: 0.5
+dataset:
+  base_dir: "../data/voicebank_demand"
+  format: "default"
+  batch_size: 16
+  n_fft: 510
+  hop_length: 128
+  num_frames: 256
+  window: "hann"
+  num_workers: 4
+  spec_factor: 0.15
+  spec_abs_exponent: 0.5
+  normalize: "noisy"
+  transform_type: "exponent"

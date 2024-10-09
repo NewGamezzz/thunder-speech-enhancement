@@ -1,0 +1,4 @@
+WANDB_TOKEN: ""
+WANDB_INIT:
+  project: ""
+  entity: ""
