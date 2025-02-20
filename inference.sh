@@ -1,1 +1,0 @@
-python inference.py --config ./config/default.yaml --inference_config "./config/inference/two_stage.yaml" --model_path "./weights/epoch=72-pesq=2.75.ckpt" --N 3 --inference_folder "../data/librifsd50k/noisy/" --output_folder "./results/output"
