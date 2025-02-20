@@ -11,8 +11,9 @@ This repository contains the official PyTorch implementations for [Trachu, T., P
 # Training
 Training is done by executing train.py. A minimal running example with default settings can be run with
 ```
-python train.py --config ./config/default.yaml --wandb_config ./wandb_config/default.yaml 
+python train.py
 ```
+For modifications, you can change the hyperparameters in the config files located in the config directory.
 
 # Evaluation
 To evaluate on a test set, run
