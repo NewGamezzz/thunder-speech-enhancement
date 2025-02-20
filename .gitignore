@@ -9,3 +9,4 @@ outputs/
 logs/
 config/trainer/trainer.yaml
 *.pyc
+*.sh
