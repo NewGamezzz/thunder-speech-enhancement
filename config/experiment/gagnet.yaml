@@ -1,0 +1,8 @@
+# @package _global_  
+
+model:
+  backbone:
+    name: "gagnet"
+  loss:
+    name: "mse_x0"
+  transform: null

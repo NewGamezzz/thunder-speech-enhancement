@@ -1,0 +1,4 @@
+defaults:
+  - dataset: voicebank_demand
+  - model: regression
+  - trainer: trainer

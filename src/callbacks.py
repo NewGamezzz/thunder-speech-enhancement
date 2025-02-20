@@ -112,6 +112,8 @@ class ValidationInference(Callback):
         self.val_dataset = val_dataset
         self.inference = inference
         self.save_path = save_path
+        self.best_epoch = None
+        self.best_path = None
         self.best_pesq = None
         self.best_si_sdr = None
         os.makedirs(self.save_path)
@@ -163,6 +165,8 @@ class ValidationInference(Callback):
             self.best_pesq = _pesq
             save_path = f"epoch={epoch}-pesq={_pesq:.2f}.ckpt"
             save_path = os.path.join(self.save_path, save_path)
+            self.best_epoch = epoch
+            self.best_path = save_path
             trainer.save(save_path)
         if self.best_si_sdr is None or self.best_si_sdr < _si_sdr:
             self.best_si_sdr = _si_sdr
@@ -172,3 +176,45 @@ class ValidationInference(Callback):
         save_path = f"epoch={epoch}-last.ckpt"
         save_path = os.path.join(self.save_path, save_path)
         trainer.save(save_path)
+
+    def on_end(self, trainer):
+        sr = 16000
+        trainer.data_module.setup("test")
+        print("Load best model:", self.best_path)
+        best_state_dict = torch.load(self.best_path)
+        trainer.model.load_state_dict(best_state_dict["model"])
+        trainer.model.eval()
+
+        clean_files = trainer.data_module.test_set.clean_files
+        noisy_files = trainer.data_module.test_set.noisy_files
+
+        total_num_files = len(clean_files)
+
+        _pesq, _si_sdr, _estoi = 0.0, 0.0, 0.0
+
+        for i in tqdm(range(self.num_eval_files)):
+            x, _ = load(clean_files[i])
+            y, _ = load(noisy_files[i])
+            x, y = x.to(trainer.device), y.to(trainer.device)
+            x_hat = self.inference.inference(y)
+
+            x_hat = x_hat.squeeze().cpu().numpy()
+            x = x.squeeze().cpu().numpy()
+            y = y.squeeze().cpu().numpy()
+
+            _si_sdr += si_sdr(x, x_hat)
+            _pesq += pesq(sr, x, x_hat, "wb")
+            _estoi += stoi(x, x_hat, sr, extended=True)
+
+        _pesq /= self.num_eval_files
+        _si_sdr /= self.num_eval_files
+        _estoi /= self.num_eval_files
+
+        wandb.log(
+            {
+                "epoch": self.best_epoch,
+                "test_pesq": _pesq,
+                "test_si_sdr": _si_sdr,
+                "test_estoi": _estoi,
+            }
+        )

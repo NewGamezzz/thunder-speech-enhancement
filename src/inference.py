@@ -8,8 +8,10 @@ InferenceRegistry = Registry("Inference")
 
 
 class BaseInference:
-    def __init__(self, data_module):
+    def __init__(self, data_module, transform="mel_spec"):
+        assert transform in ["mel_spec", "raw"], "transform parameters must be 'mel_spec' or 'raw'."
         self.data_module = data_module  # Use for transforming time-domain signal
+        self.transform = transform
 
     def sampling(self, y, **kwargs):
         raise NotImplementedError
@@ -17,13 +19,19 @@ class BaseInference:
     def preprocess(self, y: torch.Tensor, norm_factor: float):
         """Normalize and transform time-domain signal into spectrogram"""
         y = y / norm_factor
-        Y = torch.unsqueeze(self.data_module.spec_fwd(self.data_module.stft(y)), 0)
-        Y = pad_spec(Y)
+        if self.transform == "mel_spec":
+            Y = torch.unsqueeze(self.data_module.spec_fwd(self.data_module.stft(y)), 0)
+            Y = pad_spec(Y)
+        elif self.transform == "raw":
+            Y = y
         return Y
 
     def postprocess(self, X: torch.Tensor, T_orig: int, norm_factor: float):
         """Transform spectrogram to time-domain signal and denormalize"""
-        x = self.data_module.istft(self.data_module.spec_back(X), T_orig)
+        if self.transform == "mel_spec":
+            x = self.data_module.istft(self.data_module.spec_back(X), T_orig)
+        elif self.transform == "raw":
+            x = X
         x = x * norm_factor
         return x
 
@@ -52,7 +60,7 @@ class DiffusionInference(BaseInference):
         snr=0.5,
         **kwargs,
     ):
-        super().__init__(data_module)
+        super().__init__(data_module, **kwargs)
         assert sampler_type == "pc", "Only support the predictor-corrector sampling method."
         self.model = model
         self.sampler_type = sampler_type
@@ -80,8 +88,8 @@ class DiffusionInference(BaseInference):
 
 @InferenceRegistry.register("regression")
 class RegressionInference(BaseInference):
-    def __init__(self, model: Diffusion, data_module: SpecsDataModule):
-        super().__init__(data_module)
+    def __init__(self, model: Diffusion, data_module: SpecsDataModule, **kwargs):
+        super().__init__(data_module, **kwargs)
         self.model = model
 
     def sampling(self, y, **kwargs):
@@ -106,7 +114,7 @@ class TwoStageInference(BaseInference):
         interpolate_weight=0.8,
         **kwargs,
     ):
-        super().__init__(data_module)
+        super().__init__(data_module, **kwargs)
         assert sampler_type == "pc", "Only support the predictor-corrector sampling method."
         self.model = model
         self.sampler_type = sampler_type
@@ -153,7 +161,7 @@ class MultiStageInference(BaseInference):
         interpolate_weight=0.8,
         **kwargs,
     ):
-        super().__init__(data_module)
+        super().__init__(data_module, **kwargs)
         assert sampler_type == "pc", "Only support the predictor-corrector sampling method."
         self.model = model
         self.sampler_type = sampler_type

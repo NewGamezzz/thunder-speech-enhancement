@@ -1,0 +1,5 @@
+optimizer:
+  lr: 0.00002 # 0.00002
+ema:
+  decay: 0.999
+epochs: 120 # 200

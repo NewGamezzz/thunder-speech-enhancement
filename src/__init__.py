@@ -1,5 +1,6 @@
-from .trainer import Trainer, OutputData
+from .trainer import Trainer
 from .data_module import SpecsDataModule
+from .regression import Regression
 from .diffusion import Diffusion
 from .sdes import SDERegistry
 from .backbones import BackboneRegistry
@@ -13,6 +14,7 @@ __all__ = [
     "Trainer",
     "SpecsDataModule",
     "Diffusion",
+    "Regression",
     "SDERegistry",
     "BackboneRegistry",
     "LossRegistry",

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import torch
 import torch.nn as nn
 
@@ -5,8 +6,18 @@ from .sampling.predictors import PredictorRegistry
 from .sampling.correctors import CorrectorRegistry
 
 
+@dataclass
+class OutputData:
+    pred_x0: torch.Tensor
+    pred_score: torch.Tensor
+    mean: torch.Tensor
+    std: torch.Tensor
+    z: torch.Tensor  # gaussian noise for calculating denoising score matching loss
+    x0: torch.Tensor
+
+
 class Diffusion(nn.Module):
-    def __init__(self, model, sde, pred_type="score", t_eps=3e-2):
+    def __init__(self, model, sde, loss_func, pred_type="score", t_eps=3e-2, device="cuda"):
         """
         Initialize diffusion model
 
@@ -18,10 +29,13 @@ class Diffusion(nn.Module):
 
         """
         super().__init__()
+        assert pred_type in ["score", "x0"], "The output of the model must be score or x0"
         self.model = model
         self.sde = sde
+        self.loss_func = loss_func
         self.pred_type = pred_type
         self.t_eps = t_eps
+        self.device = "cuda"
 
     def forward_process(self, x0, t, y, noise=None):
         """
@@ -94,6 +108,39 @@ class Diffusion(nn.Module):
         # print("INPUT SHAPE:", dnn_input.shape)
         # print("MODEL", self.model)
         return self.model(dnn_input, t)
+
+    def step(self, batch):
+        x0, y = batch
+        x0, y = x0.to(self.device), y.to(self.device)
+
+        t = torch.rand(x0.shape[0], device=x0.device) * (self.sde.T - self.t_eps) + self.t_eps
+        mean, std = self.sde.marginal_prob(x0, t, y)
+        z = torch.randn_like(x0)
+        if std.ndim < y.ndim:
+            std = std.view(*std.size(), *((1,) * (y.ndim - std.ndim)))
+        xt = mean + std * z
+        out = self(xt, t, y)
+
+        if self.pred_type == "score":
+            out = OutputData(
+                pred_x0=None,  # TODO Derive pred_x0 from pred_score
+                pred_score=out,
+                mean=mean,
+                std=std,
+                z=z,
+                x0=x0,
+            )
+        elif self.pred_type == "x0":
+            out = OutputData(
+                pred_x0=out,
+                pred_score=None,  # TODO Derive pred_score from pred_x0
+                mean=mean,
+                std=std,
+                z=z,
+                x0=x0,
+            )
+        loss = self.loss_func(out)
+        return out, loss
 
     def pred_score(self, xt, t, y, **kwargs):
         if self.pred_type == "score":

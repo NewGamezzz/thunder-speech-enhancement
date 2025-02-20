@@ -1,0 +1,13 @@
+name: "diffusion"
+backbone:
+  name: "ncsnpp"
+  scale_by_sigma: False
+sde:
+  name: "bb"
+loss:
+  name: "mse_x0" # sdsnr mse_x0 mse_time_frequencey
+  # time_loss_weight: 0.001
+  # transform: "spec_to_raw"
+pred_type: "x0"
+t_eps: 0.03
+device: "cuda"

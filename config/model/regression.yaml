@@ -1,0 +1,7 @@
+name: "regression"
+backbone:
+  name: "convtasnet"
+loss:
+  name: "sisdr" # sisdr sdsnr mse_x0 mse_time_frequencey
+transform: "spec_to_raw"
+device: "cuda"

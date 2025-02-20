@@ -5,3 +5,7 @@ analyze.ipynb
 debug.py
 experiment_dynamic_interpolate_weight.py
 weights/
+outputs/
+logs/
+config/trainer/trainer.yaml
+*.pyc

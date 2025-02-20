@@ -158,3 +158,13 @@ def set_torch_cuda_arch_list():
     cc_string = ";".join(compute_capabilities)
     os.environ["TORCH_CUDA_ARCH_LIST"] = cc_string
     print(f"Set TORCH_CUDA_ARCH_LIST to: {cc_string}")
+
+
+def si_sdr_torch(s, s_hat):
+    min_len = min(s.size(-1), s_hat.size(-1))
+    s, s_hat = s[..., :min_len], s_hat[..., :min_len]
+    alpha = torch.dot(s_hat, s) / torch.norm(s) ** 2
+    sdr = 10 * torch.log10(
+        1e-10 + torch.norm(alpha * s) ** 2 / (1e-10 + torch.norm(alpha * s - s_hat) ** 2)
+    )
+    return sdr

@@ -1,0 +1,22 @@
+defaults:
+  - default
+
+callbacks: 
+  - name: tqdm
+  - name: wandb
+    WANDB_TOKEN: ""
+    WANDB_INIT:
+      project: "" 
+      entity: ""
+  - name: validation_inference
+    inference:
+      name: "diffusion"
+      sampler_type: "pc"
+      predictor: "reverse_diffusion"
+      corrector: "ald"
+      N: 30
+      corrector_steps: 1
+      snr: 0.5
+    val_interval: 3
+    num_eval_files: 20
+    save_path: "./weights"

@@ -1,0 +1,13 @@
+base_dir: "../data/voicebank_demand"
+format: "default"
+batch_size: 16
+n_fft: 510
+hop_length: 128
+num_frames: 256
+window: "hann"
+num_workers: 4
+spec_factor: 0.15
+spec_abs_exponent: 0.5
+normalize: "noisy"
+transform_type: "exponent"
+

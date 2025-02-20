@@ -1,0 +1,10 @@
+# @package _global_  
+
+model:
+  backbone:
+    name: "ncsnpp_small"
+    scale_by_sigma: False
+    discriminative: true
+  loss:
+    name: "mse_x0"
+  transform: null

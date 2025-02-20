@@ -64,9 +64,16 @@ class NCSNpp(nn.Module):
         image_size=256,
         embedding_type="fourier",
         dropout=0.0,
+        input_channels=4,
+        discriminative=False,
         **unused_kwargs,
     ):
         super().__init__()
+        self.discriminative = discriminative
+        if self.discriminative:
+            conditional = False
+            scale_by_sigma = False
+            input_channels = 2
         self.act = act = get_act(nonlinearity)
 
         self.nf = nf = nf
@@ -96,7 +103,7 @@ class NCSNpp(nn.Module):
         combine_method = progressive_combine.lower()
         combiner = functools.partial(Combine, method=combine_method)
 
-        num_channels = 4  # x.real, x.imag, y.real, y.imag
+        num_channels = input_channels  # x.real, x.imag, y.real, y.imag
         self.output_layer = nn.Conv2d(num_channels, 2, 1)
 
         modules = []
@@ -288,15 +295,24 @@ class NCSNpp(nn.Module):
         m_idx = 0
 
         # Convert real and imaginary parts of (x,y) into four channel dimensions
-        x = torch.cat(
-            (
-                x[:, [0], :, :].real,
-                x[:, [0], :, :].imag,
-                x[:, [1], :, :].real,
-                x[:, [1], :, :].imag,
-            ),
-            dim=1,
-        )
+        if self.discriminative:
+            x = torch.cat(
+                (
+                    x[:, [0], :, :].real,
+                    x[:, [0], :, :].imag,
+                ),
+                dim=1,
+            )
+        else:
+            x = torch.cat(
+                (
+                    x[:, [0], :, :].real,
+                    x[:, [0], :, :].imag,
+                    x[:, [1], :, :].real,
+                    x[:, [1], :, :].imag,
+                ),
+                dim=1,
+            )
 
         if self.embedding_type == "fourier":
             # Gaussian Fourier features embeddings.
@@ -448,3 +464,33 @@ class NCSNpp(nn.Module):
         h = torch.permute(h, (0, 2, 3, 1)).contiguous()
         h = torch.view_as_complex(h)[:, None, :, :]
         return h
+
+
+@BackboneRegistry.register("ncsnpp6M")
+class NCSNpp6M(NCSNpp):
+    """Tiny-scale NCSN++ model. ~6M parameters"""
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            nf=96, ch_mult=(1, 1, 1, 1), num_res_blocks=1, attn_resolutions=(0,), **kwargs
+        )
+
+    @staticmethod
+    def add_argparse_args(parser):
+        # parser.add_argument("--centered", action="store_true", help="The data is already centered [-1, 1]")
+        return parser
+
+
+@BackboneRegistry.register("ncsnpp_small")
+class NCSNpp6M(NCSNpp):
+    """Small-scale NCSN++ model. ~6M parameters"""
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            nf=128, ch_mult=(1, 2, 2, 2), num_res_blocks=1, attn_resolutions=(0,), **kwargs
+        )
+
+    @staticmethod
+    def add_argparse_args(parser):
+        # parser.add_argument("--centered", action="store_true", help="The data is already centered [-1, 1]")
+        return parser
