@@ -1,4 +1,4 @@
 defaults:
   - dataset: voicebank_demand
-  - model: regression
+  - model: diffusion
   - trainer: trainer
